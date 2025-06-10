@@ -14,6 +14,7 @@ import {
   HelpCircle,
   X
 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface DashboardSidebarProps {
   open: boolean;
@@ -21,53 +22,70 @@ interface DashboardSidebarProps {
 }
 
 const DashboardSidebar = ({ open, onClose }: DashboardSidebarProps) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const navigation = [
     {
       name: "Tableau de bord",
       icon: LayoutDashboard,
-      current: true
+      path: "/",
+      current: location.pathname === "/"
     },
     {
       name: "Utilisateurs",
       icon: Users,
-      current: false
+      path: "/users",
+      current: location.pathname === "/users"
     },
     {
       name: "Publications",
       icon: FileText,
-      current: false
+      path: "/posts",
+      current: location.pathname === "/posts"
     },
     {
       name: "Commentaires",
       icon: MessageSquare,
+      path: "/comments",
       current: false
     },
     {
       name: "Tags",
       icon: Tags,
+      path: "/tags",
       current: false
     },
     {
       name: "Analytiques",
       icon: BarChart3,
+      path: "/analytics",
       current: false
     },
     {
       name: "Modération",
       icon: Shield,
+      path: "/moderation",
       current: false
     },
     {
       name: "Paramètres",
       icon: Settings,
+      path: "/settings",
       current: false
     },
     {
       name: "Aide",
       icon: HelpCircle,
+      path: "/help",
       current: false
     }
   ];
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    onClose(); // Close sidebar on mobile after navigation
+  };
 
   return (
     <>
@@ -81,10 +99,10 @@ const DashboardSidebar = ({ open, onClose }: DashboardSidebarProps) => {
       
       {/* Sidebar */}
       <div className={cn(
-        "fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        "fixed top-0 left-0 z-50 h-full w-64 bg-card/95 backdrop-blur-xl border-r border-border/50 transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 shadow-xl lg:shadow-none",
         open ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex items-center justify-between p-6 lg:hidden">
+        <div className="flex items-center justify-between p-6 lg:hidden border-b border-border/50">
           <div className="flex items-center gap-3">
             <img 
               src="/lovable-uploads/1ea28dad-351e-4960-91bf-d4b9ba85d914.png" 
@@ -101,7 +119,7 @@ const DashboardSidebar = ({ open, onClose }: DashboardSidebarProps) => {
           </Button>
         </div>
 
-        <div className="hidden lg:flex items-center gap-3 p-6 border-b border-border">
+        <div className="hidden lg:flex items-center gap-3 p-6 border-b border-border/50">
           <img 
             src="/lovable-uploads/1ea28dad-351e-4960-91bf-d4b9ba85d914.png" 
             alt="Attijariwafa Bank" 
@@ -120,24 +138,30 @@ const DashboardSidebar = ({ open, onClose }: DashboardSidebarProps) => {
                 key={item.name}
                 variant={item.current ? "secondary" : "ghost"}
                 className={cn(
-                  "w-full justify-start gap-3 h-11",
-                  item.current && "bg-accent text-accent-foreground"
+                  "w-full justify-start gap-3 h-11 transition-all duration-200",
+                  item.current 
+                    ? "bg-primary/10 text-primary border border-primary/20 shadow-sm" 
+                    : "hover:bg-accent/50 hover:text-accent-foreground"
                 )}
+                onClick={() => handleNavigation(item.path)}
               >
-                <item.icon className="h-5 w-5" />
+                <item.icon className={cn(
+                  "h-5 w-5 transition-colors",
+                  item.current ? "text-primary" : "text-muted-foreground"
+                )} />
                 {item.name}
               </Button>
             ))}
           </nav>
         </ScrollArea>
 
-        <div className="p-6 border-t border-border">
-          <div className="bg-muted/50 rounded-lg p-4">
+        <div className="p-6 border-t border-border/50">
+          <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20">
             <h3 className="font-medium text-sm text-foreground mb-1">Mise à niveau</h3>
             <p className="text-xs text-muted-foreground mb-3">
               Accédez à plus de fonctionnalités avec notre plan Pro
             </p>
-            <Button size="sm" className="w-full">
+            <Button size="sm" className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
               Découvrir Pro
             </Button>
           </div>
