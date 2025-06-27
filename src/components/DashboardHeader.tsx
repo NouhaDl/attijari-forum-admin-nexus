@@ -43,16 +43,11 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
           </Button>
           
           <div className="flex items-center gap-3">
-            <img 
-              src="/lovable-uploads/1ea28dad-351e-4960-91bf-d4b9ba85d914.png" 
-              alt="Attijariwafa Bank" 
-              className="h-8 w-auto"
-            />
+            
             <div className="hidden sm:block">
               <h1 className="text-lg font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                AttijariForum
+                AttijariCommunity
               </h1>
-              <p className="text-xs text-muted-foreground">Administration</p>
             </div>
           </div>
         </div>

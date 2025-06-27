@@ -110,7 +110,7 @@ const DashboardSidebar = ({ open, onClose }: DashboardSidebarProps) => {
               className="h-8 w-auto"
             />
             <div>
-              <h1 className="text-lg font-semibold text-foreground">AttijariForum</h1>
+              <h1 className="text-lg font-semibold text-foreground">AttijariCommunity</h1>
               <p className="text-xs text-muted-foreground">Administration</p>
             </div>
           </div>
@@ -126,7 +126,7 @@ const DashboardSidebar = ({ open, onClose }: DashboardSidebarProps) => {
             className="h-8 w-auto"
           />
           <div>
-            <h1 className="text-lg font-semibold text-foreground">AttijariForum</h1>
+            <h1 className="text-lg font-semibold text-foreground"> AttijariCommunity</h1>
             <p className="text-xs text-muted-foreground">Administration</p>
           </div>
         </div>
@@ -155,17 +155,7 @@ const DashboardSidebar = ({ open, onClose }: DashboardSidebarProps) => {
           </nav>
         </ScrollArea>
 
-        <div className="p-6 border-t border-border/50">
-          <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20">
-            <h3 className="font-medium text-sm text-foreground mb-1">Mise à niveau</h3>
-            <p className="text-xs text-muted-foreground mb-3">
-              Accédez à plus de fonctionnalités avec notre plan Pro
-            </p>
-            <Button size="sm" className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-              Découvrir Pro
-            </Button>
-          </div>
-        </div>
+        
       </div>
     </>
   );

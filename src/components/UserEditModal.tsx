@@ -1,17 +1,18 @@
-
-import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog } from "@/components/ui/dialog";
+import { DialogContent } from "@/components/ui/dialog";
+import { DialogDescription } from "@/components/ui/dialog";
+import { DialogFooter } from "@/components/ui/dialog";
+import { DialogHeader } from "@/components/ui/dialog";
+import { DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select } from "@/components/ui/select";
+import { SelectContent } from "@/components/ui/select";
+import { SelectItem } from "@/components/ui/select";
+import { SelectTrigger } from "@/components/ui/select";
+import { SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
 interface User {
@@ -35,7 +36,16 @@ interface UserEditModalProps {
 }
 
 const UserEditModal = ({ user, isOpen, onClose, onSave }: UserEditModalProps) => {
-  const [editedUser, setEditedUser] = useState<User | null>(user);
+  const [editedUser, setEditedUser] = useState<User | null>(null);
+
+  // Update editedUser when user prop changes
+  useEffect(() => {
+    if (user) {
+      setEditedUser({ ...user });
+    } else {
+      setEditedUser(null);
+    }
+  }, [user]);
 
   const handleSave = () => {
     if (editedUser) {
@@ -44,10 +54,16 @@ const UserEditModal = ({ user, isOpen, onClose, onSave }: UserEditModalProps) =>
     }
   };
 
+  const handleClose = () => {
+    setEditedUser(null);
+    onClose();
+  };
+
+  // Don't render if no user data
   if (!editedUser) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] bg-card/95 backdrop-blur-xl border border-border/50">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
@@ -65,9 +81,10 @@ const UserEditModal = ({ user, isOpen, onClose, onSave }: UserEditModalProps) =>
             </Label>
             <Input
               id="name"
-              value={editedUser.name}
+              value={editedUser.name || ""}
               onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
               className="col-span-3"
+              placeholder="Nom de l'utilisateur"
             />
           </div>
           
@@ -78,9 +95,10 @@ const UserEditModal = ({ user, isOpen, onClose, onSave }: UserEditModalProps) =>
             <Input
               id="email"
               type="email"
-              value={editedUser.email}
+              value={editedUser.email || ""}
               onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
               className="col-span-3"
+              placeholder="email@exemple.com"
             />
           </div>
           
@@ -93,7 +111,7 @@ const UserEditModal = ({ user, isOpen, onClose, onSave }: UserEditModalProps) =>
               onValueChange={(value) => setEditedUser({ ...editedUser, role: value })}
             >
               <SelectTrigger className="col-span-3">
-                <SelectValue />
+                <SelectValue placeholder="Sélectionner un rôle" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Administrateur">Administrateur</SelectItem>
@@ -112,7 +130,7 @@ const UserEditModal = ({ user, isOpen, onClose, onSave }: UserEditModalProps) =>
               onValueChange={(value) => setEditedUser({ ...editedUser, status: value })}
             >
               <SelectTrigger className="col-span-3">
-                <SelectValue />
+                <SelectValue placeholder="Sélectionner un statut" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="actif">Actif</SelectItem>
@@ -128,17 +146,17 @@ const UserEditModal = ({ user, isOpen, onClose, onSave }: UserEditModalProps) =>
             </Label>
             <div className="col-span-3 flex gap-2">
               <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/20">
-                {editedUser.posts} posts
+                {editedUser.posts || 0} posts
               </Badge>
               <Badge variant="outline" className="bg-green-50 dark:bg-green-950/20">
-                {editedUser.comments} commentaires
+                {editedUser.comments || 0} commentaires
               </Badge>
             </div>
           </div>
         </div>
         
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             Annuler
           </Button>
           <Button 

@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,8 @@ import {
   Trash2,
   UserPlus,
   Shield,
-  ShieldCheck
+  ShieldCheck,
+  Loader2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,18 +23,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+// Table components inline implementation
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import UserEditModal from "./UserEditModal";
-import DeleteConfirmModal from "./DeleteConfirmModal";
-import { useToast } from "@/hooks/use-toast";
+
+interface ApiUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  profileImage: string;
+}
 
 interface User {
   id: number;
@@ -50,73 +47,71 @@ interface User {
 }
 
 const UsersPage = () => {
-  const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      name: "Ahmed Bennani",
-      email: "ahmed.bennani@attijari.com",
-      role: "Administrateur",
-      status: "actif",
-      posts: 23,
-      comments: 145,
-      joinDate: "2023-01-15",
-      lastActive: "il y a 2h",
-      avatar: "/placeholder.svg"
-    },
-    {
-      id: 2,
-      name: "Fatima El Alami",
-      email: "fatima.elalami@attijari.com",
-      role: "Modérateur",
-      status: "actif",
-      posts: 67,
-      comments: 289,
-      joinDate: "2023-03-22",
-      lastActive: "il y a 1h",
-      avatar: "/placeholder.svg"
-    },
-    {
-      id: 3,
-      name: "Omar Tazi",
-      email: "omar.tazi@external.com",
-      role: "Utilisateur",
-      status: "inactif",
-      posts: 12,
-      comments: 56,
-      joinDate: "2023-05-10",
-      lastActive: "il y a 2 jours",
-      avatar: "/placeholder.svg"
-    },
-    {
-      id: 4,
-      name: "Aicha Mansouri",
-      email: "aicha.mansouri@attijari.com",
-      role: "Utilisateur",
-      status: "actif",
-      posts: 89,
-      comments: 234,
-      joinDate: "2023-02-08",
-      lastActive: "il y a 30min",
-      avatar: "/placeholder.svg"
-    },
-    {
-      id: 5,
-      name: "Youssef Alami",
-      email: "youssef.alami@external.com",
-      role: "Utilisateur",
-      status: "suspendu",
-      posts: 5,
-      comments: 23,
-      joinDate: "2024-01-20",
-      lastActive: "il y a 1 semaine",
-      avatar: "/placeholder.svg"
-    }
-  ]);
-
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Fonction utilitaire pour générer des données aléatoires
+  const generateRandomData = (apiUser: ApiUser): User => {
+    const statuses = ['actif', 'inactif', 'suspendu'];
+    const roles = ['Administrateur', 'Modérateur', 'Utilisateur'];
+    const domains = ['@attijari.com', '@external.com', '@gmail.com', '@outlook.com'];
+    
+    // Générer email basé sur le nom
+    const email = `${apiUser.firstName.toLowerCase()}.${apiUser.lastName.toLowerCase()}${domains[Math.floor(Math.random() * domains.length)]}`;
+    
+    // Générer dates aléatoires
+    const joinDate = new Date(2023, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1)
+      .toISOString().split('T')[0];
+    
+    const lastActiveOptions = [
+      'il y a 1h', 'il y a 2h', 'il y a 30min', 'il y a 1 jour', 
+      'il y a 2 jours', 'il y a 1 semaine', 'maintenant'
+    ];
+
+    return {
+      id: parseInt(apiUser.id),
+      name: `${apiUser.firstName} ${apiUser.lastName}`.trim(),
+      email: email,
+      role: roles[Math.floor(Math.random() * roles.length)],
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      posts: Math.floor(Math.random() * 100),
+      comments: Math.floor(Math.random() * 300),
+      joinDate: joinDate,
+      lastActive: lastActiveOptions[Math.floor(Math.random() * lastActiveOptions.length)],
+      avatar: apiUser.profileImage
+    };
+  };
+
+  // Fetch users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:8081/api/auth/users');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const apiUsers: ApiUser[] = await response.json();
+        
+        // Transform API data to User format with random data
+        const transformedUsers = apiUsers.map(generateRandomData);
+        
+        setUsers(transformedUsers);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+        console.error('Error fetching users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -144,32 +139,43 @@ const UsersPage = () => {
   };
 
   const handleEditUser = (user: User) => {
-    setEditingUser(user);
-  };
-
-  const handleSaveUser = (updatedUser: User) => {
-    setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
-    toast({
-      title: "Utilisateur modifié",
-      description: `Les informations de ${updatedUser.name} ont été mises à jour avec succès.`,
-    });
+    console.log('Edit user:', user);
+    // Implement edit functionality
   };
 
   const handleDeleteUser = (user: User) => {
-    setDeletingUser(user);
+    console.log('Delete user:', user);
+    // Implement delete functionality
   };
 
-  const confirmDeleteUser = () => {
-    if (deletingUser) {
-      setUsers(users.filter(u => u.id !== deletingUser.id));
-      toast({
-        title: "Utilisateur supprimé",
-        description: `${deletingUser.name} a été supprimé définitivement.`,
-        variant: "destructive",
-      });
-      setDeletingUser(null);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Chargement des utilisateurs...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Erreur de chargement</h3>
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()} variant="outline">
+                Réessayer
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-background via-background to-muted/10 min-h-full">
@@ -181,10 +187,12 @@ const UsersPage = () => {
               Gestion des utilisateurs
             </h1>
             <p className="text-muted-foreground text-lg">
-              Administrez les comptes utilisateurs de votre communauté AttijariForum
+              Administrez les comptes utilisateurs de la communauté AWB
             </p>
           </div>
-          <Button className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Button 
+            className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300"
+          >
             <UserPlus className="h-4 w-4" />
             Ajouter un utilisateur
           </Button>
@@ -280,29 +288,29 @@ const UsersPage = () => {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-muted/30">
-                    <TableHead className="font-semibold">Utilisateur</TableHead>
-                    <TableHead className="font-semibold">Email</TableHead>
-                    <TableHead className="font-semibold">Rôle</TableHead>
-                    <TableHead className="font-semibold">Statut</TableHead>
-                    <TableHead className="font-semibold">Publications</TableHead>
-                    <TableHead className="font-semibold">Commentaires</TableHead>
-                    <TableHead className="font-semibold">Inscription</TableHead>
-                    <TableHead className="font-semibold">Dernière activité</TableHead>
-                    <TableHead className="font-semibold">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b hover:bg-muted/30">
+                    <th className="text-left p-4 font-semibold">Utilisateur</th>
+                    <th className="text-left p-4 font-semibold">Email</th>
+                    <th className="text-left p-4 font-semibold">Rôle</th>
+                    <th className="text-left p-4 font-semibold">Statut</th>
+                    <th className="text-left p-4 font-semibold">Publications</th>
+                    <th className="text-left p-4 font-semibold">Commentaires</th>
+                    <th className="text-left p-4 font-semibold">Inscription</th>
+                    <th className="text-left p-4 font-semibold">Dernière activité</th>
+                    <th className="text-left p-4 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {filteredUsers.map((user) => (
-                    <TableRow key={user.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell>
+                    <tr key={user.id} className="border-b hover:bg-muted/30 transition-colors">
+                      <td className="p-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-12 w-12 ring-2 ring-primary/20">
                             <AvatarImage src={user.avatar} alt={user.name} />
                             <AvatarFallback className="bg-gradient-to-r from-primary to-primary/60 text-white font-semibold">
-                              {user.name.split(' ').map(n => n[0]).join('')}
+                              {user.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -310,39 +318,39 @@ const UsersPage = () => {
                             <p className="text-sm text-muted-foreground">ID: {user.id}</p>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="p-4">
                         <p className="text-sm font-medium">{user.email}</p>
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="p-4">
                         <Badge 
                           variant={getRoleBadge(user.role).variant}
                           className={getRoleBadge(user.role).className}
                         >
                           {user.role}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="p-4">
                         <Badge 
                           variant={getStatusBadge(user.status).variant}
                           className={getStatusBadge(user.status).className}
                         >
                           {user.status}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="p-4">
                         <span className="text-sm font-semibold text-blue-600">{user.posts}</span>
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="p-4">
                         <span className="text-sm font-semibold text-green-600">{user.comments}</span>
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="p-4">
                         <p className="text-sm text-muted-foreground">{user.joinDate}</p>
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="p-4">
                         <p className="text-sm text-muted-foreground">{user.lastActive}</p>
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="p-4">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-accent/80">
@@ -371,31 +379,20 @@ const UsersPage = () => {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
+            
+            {filteredUsers.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Aucun utilisateur trouvé</p>
+              </div>
+            )}
           </CardContent>
         </Card>
-
-        {/* Modals */}
-        <UserEditModal
-          user={editingUser}
-          isOpen={!!editingUser}
-          onClose={() => setEditingUser(null)}
-          onSave={handleSaveUser}
-        />
-
-        <DeleteConfirmModal
-          isOpen={!!deletingUser}
-          onClose={() => setDeletingUser(null)}
-          onConfirm={confirmDeleteUser}
-          title="Supprimer l'utilisateur"
-          description="Êtes-vous sûr de vouloir supprimer cet utilisateur ? Toutes ses publications et commentaires seront également supprimés."
-          itemName={deletingUser?.name}
-        />
       </div>
     </div>
   );
