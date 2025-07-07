@@ -27,7 +27,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-// Table components implemented inline
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const PostsPage = () => {
@@ -35,17 +34,115 @@ const PostsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
-const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    content: "",
+    profileImage: "",
+    images: []
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const handleViewPost = (post) => {
     setSelectedPost(post);
     setIsViewModalOpen(true);
   };
 
+  const handleDeletePost = async (postId) => {
+    const confirmDelete = window.confirm("Voulez-vous vraiment supprimer cette publication ?");
+    if (!confirmDelete) return;
+  
+    try {
+      const response = await fetch(`http://localhost:8081/api/posts/${postId}`, {
+        method: "DELETE",
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Échec de la suppression: ${response.status}`);
+      }
+  
+      // Mise à jour locale de la liste des posts
+      setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId));
+      alert("Publication supprimée avec succès !");
+    } catch (error) {
+      console.error("Erreur lors de la suppression :", error);
+      alert("Une erreur est survenue lors de la suppression.");
+    }
+  };
+
+  const handleEditPost = (post) => {
+    setSelectedPost(post);
+    setEditForm({
+      content: post.content || "",
+      profileImage: post.profileImage || "",
+      images: post.images || []
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdatePost = async () => {
+    if (!selectedPost) return;
+    
+    try {
+      setIsUpdating(true);
+      
+      // Préparer l'objet PostRequest - seulement le contenu
+      const postRequest = {
+        content: editForm.content.trim()
+      };
+
+      console.log("Envoi de la requête PUT:", postRequest);
+
+      const response = await fetch(`http://localhost:8081/api/posts/${selectedPost.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(postRequest)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Erreur du serveur:", errorText);
+        throw new Error(`Erreur lors de la mise à jour : ${response.status} - ${errorText}`);
+      }
+
+      const updatedPost = await response.json();
+      console.log("Réponse du serveur:", updatedPost);
+
+      // Mettre à jour la liste des posts avec la réponse du serveur
+      setPosts(prevPosts =>
+        prevPosts.map(post => 
+          post.id === selectedPost.id 
+            ? { 
+                ...post, 
+                content: updatedPost.content,
+                // Garder les autres propriétés existantes
+                profileImage: post.profileImage,
+                images: post.images || [],
+                tags: post.tags
+              }
+            : post
+        )
+      );
+
+      setIsEditModalOpen(false);
+      alert("Publication mise à jour avec succès !");
+      
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour :", error);
+      alert(`Erreur lors de la mise à jour du post: ${error.message}`);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+    
   // Fonction pour récupérer les posts depuis l'API
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8081/api/posts');
+      // Utiliser l'endpoint /all qui ne nécessite pas de currentUserId
+      const response = await fetch('http://localhost:8081/api/posts/all');
       
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`);
@@ -271,13 +368,12 @@ const [isViewModalOpen, setIsViewModalOpen] = useState(false);
                         <td className="p-4 align-middle">
                           <div className="max-w-md">
                             <p className="font-medium text-foreground line-clamp-2">
-                              Publication #{post.id}
+                              {post.title || `Publication #${post.id}`}
                             </p>
                             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                               {post.content.substring(0, 120)}...
                             </p>
                           </div>
-                          
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex items-center gap-2">
@@ -308,12 +404,12 @@ const [isViewModalOpen, setIsViewModalOpen] = useState(false);
                         </td>
                         <td className="p-4 align-middle">
                           <div className="flex flex-wrap gap-1 max-w-32">
-                            {post.tags.slice(0, 2).map((tag, index) => (
+                            {(post.tags || []).slice(0, 2).map((tag, index) => (
                               <Badge key={index} variant="outline" className="text-xs">
                                 {tag}
                               </Badge>
                             ))}
-                            {post.tags.length > 2 && (
+                            {(post.tags || []).length > 2 && (
                               <Badge variant="outline" className="text-xs">
                                 +{post.tags.length - 2}
                               </Badge>
@@ -332,7 +428,7 @@ const [isViewModalOpen, setIsViewModalOpen] = useState(false);
                             </div>
                             <div className="flex items-center gap-1 text-sm text-orange-500">
                               <ThumbsUp className="h-3 w-3 fill-orange-500 stroke-orange-500" />
-                              <span>{post.isLiked ? 1 : 0}</span>
+                              <span>{post.likesCount || 0}</span>
                             </div>
                           </div>
                         </td>
@@ -355,7 +451,7 @@ const [isViewModalOpen, setIsViewModalOpen] = useState(false);
                                 <Eye className="mr-2 h-4 w-4" />
                                 Voir
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditPost(post)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Modifier
                               </DropdownMenuItem>
@@ -371,7 +467,10 @@ const [isViewModalOpen, setIsViewModalOpen] = useState(false);
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Rejeter
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => handleDeletePost(post.id)}
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Supprimer
                               </DropdownMenuItem>
@@ -387,58 +486,145 @@ const [isViewModalOpen, setIsViewModalOpen] = useState(false);
           </CardContent>
         </Card>
       </div>
+
       {/* Modal pour voir le post complet */}
-{isViewModalOpen && selectedPost && (
-  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div className="bg-background rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div className="p-6 space-y-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-lg font-semibold">Publication #{selectedPost.id}</h3>
-            <p className="text-sm text-muted-foreground">
-              Posté par {selectedPost.author} le {formatDate(selectedPost.date)}
-            </p>
+      {isViewModalOpen && selectedPost && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {selectedPost.title || `Publication #${selectedPost.id}`}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Posté par {selectedPost.author} le {formatDate(selectedPost.date)}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsViewModalOpen(false)}
+                >
+                  <XCircle className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="whitespace-pre-line">{selectedPost.content}</p>
+              </div>
+
+              {selectedPost.images && selectedPost.images.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Images :</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedPost.images.map((image, index) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`Image ${index + 1}`}
+                        className="rounded-lg max-h-32 object-cover"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                {(selectedPost.tags || []).map((tag, index) => (
+                  <Badge key={index} variant="outline">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-4 pt-2">
+                <div className="flex items-center gap-1">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{selectedPost.viewsCount || 0} vues</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{selectedPost.commentsCount || 0} commentaires</span>
+                </div>
+                <div className="flex items-center gap-1 text-orange-500">
+                  <ThumbsUp className="h-4 w-4 fill-orange-500 stroke-orange-500" />
+                  <span className="text-sm">{selectedPost.likesCount || 0} j'aime</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setIsViewModalOpen(false)}
-          >
-            <XCircle className="h-5 w-5" />
-          </Button>
         </div>
-        
-        <div className="bg-muted/50 p-4 rounded-lg">
-          <p className="whitespace-pre-line">{selectedPost.content}</p>
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          {selectedPost.tags.map((tag, index) => (
-            <Badge key={index} variant="outline">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-        
-        <div className="flex items-center gap-4 pt-2">
-          <div className="flex items-center gap-1">
-            <Eye className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{selectedPost.viewsCount || 0} vues</span>
+      )}
+
+      {/* Modal pour modifier un post - Version simplifiée */}
+      {isEditModalOpen && selectedPost && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-semibold">Modifier la publication #{selectedPost.id}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Auteur : {selectedPost.author}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsEditModalOpen(false)}
+                  disabled={isUpdating}
+                >
+                  <XCircle className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Contenu</label>
+                <textarea
+                  className="w-full p-2 border rounded-md bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  rows={6}
+                  value={editForm.content}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, content: e.target.value })
+                  }
+                  disabled={isUpdating}
+                />
+              </div>
+
+              <div className="bg-muted/30 p-3 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Note :</strong> Seul le contenu peut être modifié. Les tags, images et autres propriétés restent inchangés.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditModalOpen(false)}
+                  disabled={isUpdating}
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={handleUpdatePost}
+                  disabled={isUpdating || !editForm.content.trim()}
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Mise à jour...
+                    </>
+                  ) : (
+                    'Enregistrer'
+                  )}
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{selectedPost.commentsCount || 0} commentaires</span>
-          </div>
-          <div className="flex items-center gap-1 text-orange-500">
-            <ThumbsUp className="h-4 w-4 fill-orange-500 stroke-orange-500" />
-            <span className="text-sm">{selectedPost.isLiked ? 1 : 0} j'aime</span>
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
-    </div>
+      )}
+    </div> 
   );
 };
 

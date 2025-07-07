@@ -32,6 +32,7 @@ const DashboardSidebar = ({ open, onClose }: DashboardSidebarProps) => {
       path: "/",
       current: location.pathname === "/"
     },
+
     {
       name: "Utilisateurs",
       icon: Users,

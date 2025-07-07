@@ -6,6 +6,10 @@ import DashboardOverview from "@/components/DashboardOverview";
 import UsersPage from "@/components/UsersPage";
 import PostsPage from "@/components/PostsPage";
 import LoginForm from "@/components/LoginForm";
+import Tags from "@/components/Tags"; // <-- ajoute ceci
+import CommentPage from "@/components/comment"; // ✅ import manquant ajouté
+
+
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -39,6 +43,10 @@ const Index = () => {
             <Route path="/" element={<DashboardOverview />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/posts" element={<PostsPage />} />
+            <Route path="/tags" element={<Tags />} />
+            <Route path="/comments" element={<CommentPage />} />
+
+
           </Routes>
         </main>
       </div>
